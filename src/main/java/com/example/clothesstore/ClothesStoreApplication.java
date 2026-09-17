@@ -1,4 +1,4 @@
-package com.example.clothes_store;
+package com.example.clothesstore;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class ClothesStoreApplication {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(ClothesStoreApplication.class, args);
     }
 

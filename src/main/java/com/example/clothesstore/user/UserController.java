@@ -1,5 +1,6 @@
 package com.example.clothesstore.user;
 
+import com.example.clothesstore.auth.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -12,12 +13,8 @@ public class UserController {
 
     private final UserService userService;
 
-    private final UserRepository userRepository;
-
-    public UserController(UserService userService,
-                          UserRepository userRepository) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.userRepository = userRepository;
     }
 
     public record CreateUserRequest(String email, String password) {}
@@ -48,7 +45,7 @@ public class UserController {
     // === Чтение всех ===
     @GetMapping
     public List<UserDto> getAllUsers() {
-        return UserDto.from(userRepository.findAll());
+        return UserDto.from(userService.getAllUsers());
     }
 
     // === Обновление ===

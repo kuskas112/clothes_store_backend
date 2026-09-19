@@ -17,6 +17,10 @@ public class User {
     @Column(nullable = false, length = 255)
     private String password;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role = Role.USER;
+
     @Column(length = 50)
     private String firstName;
 
@@ -76,6 +80,9 @@ public class User {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

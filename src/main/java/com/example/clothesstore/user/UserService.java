@@ -38,6 +38,21 @@ public class UserService {
         return user;
     }
 
+    public User createUser(
+            String email,
+            String password,
+            String firstName,
+            String lastName
+    ) {
+        if (userRepository.existsByEmail(email)) {
+            throw new EmailAlreadyExistsException(email);
+        }
+        String hashed = passwordEncoder.encode(password);
+        User user = userRepository.save(new User(email, hashed, firstName, lastName));
+        log.info("User {} created", email);
+        return user;
+    }
+
     // === Чтение одного ===
     @Transactional(readOnly = true)
     public User getUserById(Long id) {

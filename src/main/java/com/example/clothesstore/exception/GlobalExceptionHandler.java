@@ -45,4 +45,11 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponce("Внутренняя ошибка сервера"));
     }
+
+    @ExceptionHandler(UnauthorizedUserException.class)
+    public ResponseEntity<ErrorResponce> handleUnauthorizedUser(UnauthorizedUserException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponce(ex.getMessage()));
+    }
 }

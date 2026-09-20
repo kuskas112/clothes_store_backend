@@ -4,6 +4,7 @@ import com.example.clothesstore.user.User;
 import com.example.clothesstore.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -59,12 +60,33 @@ public class AuthService {
         return userService.createUser(email, password);
     }
 
-    public void logout(){
-
+    public User register(
+            String email,
+            String password,
+            String firstName,
+            String lastName
+    ){
+        log.info("Registering user {}", email);
+        return userService.createUser(email, password, firstName, lastName);
     }
 
-    public void me(){
+    public void logout(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
 
+        SecurityContextHolder.clearContext();
+
+        log.info("User logged out");
+    }
+
+    public User me(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return null;
+        }
+        return userService.getUserByEmail(auth.getName());
     }
 
 

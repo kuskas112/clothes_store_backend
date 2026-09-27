@@ -9,8 +9,8 @@ public record TextileDto(
         String composition,
         Integer densityGsm,
         WeaveType weaveType,
-        Season season,
         Stretch stretch,
+        Manufacturer manufacturer,
         String careInstructions,
         BigDecimal priceModifier,
         Boolean active

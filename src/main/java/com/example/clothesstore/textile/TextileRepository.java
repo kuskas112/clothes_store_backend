@@ -15,8 +15,6 @@ public interface TextileRepository extends JpaRepository<Textile, Integer> {
 
     List<Textile> findAllByActiveTrue();
 
-    List<Textile> findAllByActiveTrueAndSeason(Season season);
-
     List<Textile> findAllByWeaveTypeAndActiveTrue(WeaveType weaveType);
 
     Page<Textile> findAllByActiveTrue(Pageable pageable);

@@ -1,11 +1,14 @@
 package com.example.clothesstore.textile;
 
+import com.example.clothesstore.product.ProductTextile;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(
@@ -42,12 +45,12 @@ public class Textile {
     private WeaveType weaveType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "season", length = 20)
-    private Season season;
-
-    @Enumerated(EnumType.STRING)
     @Column(name = "stretch", length = 20)
     private Stretch stretch;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "manufacturer", length = 20)
+    private Manufacturer manufacturer;
 
     @Column(name = "care_instructions", length = 500)
     private String careInstructions;
@@ -57,6 +60,9 @@ public class Textile {
 
     @Column(name = "active", nullable = false)
     private boolean active = true;
+
+    @OneToMany(mappedBy = "textile")
+    private Set<ProductTextile> products = new HashSet<>();
 
     @Override
     public final boolean equals(Object o) {

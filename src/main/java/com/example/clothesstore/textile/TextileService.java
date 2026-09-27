@@ -15,54 +15,49 @@ import java.util.List;
 public class TextileService {
 
     private final TextileRepository textileRepository;
-    private final TextileMapper textileMapper;
 
     // ===== READ =====
 
     @Transactional(readOnly = true)
-    public Page<TextileDto> getAll(Pageable pageable) {
-        return textileRepository.findAll(pageable)
-                .map(textileMapper::toDto);
+    public Page<Textile> getAll(Pageable pageable) {
+        return textileRepository.findAll(pageable);
     }
 
     @Transactional(readOnly = true)
-    public TextileDto getOne(Integer id) {
-        return textileMapper.toDto(findOrThrow(id));
+    public Textile getOne(Integer id) {
+        return findOrThrow(id);
     }
 
     @Transactional(readOnly = true)
-    public List<TextileDto> getMany(List<Integer> ids) {
-        return textileMapper.toDto(textileRepository.findAllById(ids));
+    public List<Textile> getMany(List<Integer> ids) {
+        return textileRepository.findAllById(ids);
     }
 
     // ===== CREATE =====
 
     @Transactional
-    public TextileDto create(TextileDto dto) {
-        Textile textile = textileMapper.toEntity(dto);
-        textile.setActive(true); // серверное поле
-        Textile saved = textileRepository.save(textile);
-        return textileMapper.toDto(saved);
+    public Textile create(Textile textile) {
+        textile.setId(null); // защита от подсунутого id
+        textile.setActive(true);
+        return textileRepository.save(textile);
     }
 
     // ===== UPDATE (PATCH) =====
 
     @Transactional
-    public TextileDto patch(Integer id, TextilePatchDto patch) {
+    public Textile patch(Integer id, TextilePatchDto patch, TextileMapper mapper) {
+        // patch всё ещё требует DTO — иначе не отличить «поле не пришло»
         Textile textile = findOrThrow(id);
-        textileMapper.updateEntity(patch, textile);
-        Textile saved = textileRepository.save(textile);
-        return textileMapper.toDto(saved);
+        mapper.updateEntity(patch, textile);
+        return textileRepository.save(textile);
     }
 
     @Transactional
-    public List<Integer> patchMany(List<Integer> ids, TextilePatchDto patch) {
+    public List<Integer> patchMany(List<Integer> ids, TextilePatchDto patch, TextileMapper mapper) {
         List<Textile> textiles = textileRepository.findAllById(ids);
-
         for (Textile textile : textiles) {
-            textileMapper.updateEntity(patch, textile);
+            mapper.updateEntity(patch, textile);
         }
-
         return textileRepository.saveAll(textiles).stream()
                 .map(Textile::getId)
                 .toList();

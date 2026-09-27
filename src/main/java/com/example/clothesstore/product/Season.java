@@ -1,4 +1,4 @@
-package com.example.clothesstore.textile;
+package com.example.clothesstore.product;
 
 public enum Season {
     SUMMER,

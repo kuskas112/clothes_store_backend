@@ -15,39 +15,44 @@ import java.util.List;
 public class TextileController {
 
     private final TextileService textileService;
+    private final TextileMapper textileMapper;
 
     @GetMapping
     public PagedModel<TextileDto> getAll(Pageable pageable) {
-        Page<TextileDto> page = textileService.getAll(pageable);
+        Page<TextileDto> page = textileService.getAll(pageable)
+                .map(textileMapper::toDto);
         return new PagedModel<>(page);
     }
 
     @GetMapping("/{id}")
     public TextileDto getOne(@PathVariable Integer id) {
-        return textileService.getOne(id);
+        return textileMapper.toDto(textileService.getOne(id));
     }
 
     @GetMapping("/by-ids")
     public List<TextileDto> getMany(@RequestParam List<Integer> ids) {
-        return textileService.getMany(ids);
+        return textileMapper.toDto(textileService.getMany(ids));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TextileDto create(@RequestBody TextileDto dto) {
-        return textileService.create(dto);
+        Textile textile = textileMapper.toEntity(dto);
+        Textile saved = textileService.create(textile);
+        return textileMapper.toDto(saved);
     }
 
     @PatchMapping("/{id}")
     public TextileDto patch(@PathVariable Integer id,
                             @RequestBody TextilePatchDto patch) {
-        return textileService.patch(id, patch);
+        Textile saved = textileService.patch(id, patch, textileMapper);
+        return textileMapper.toDto(saved);
     }
 
     @PatchMapping
     public List<Integer> patchMany(@RequestParam List<Integer> ids,
                                    @RequestBody TextilePatchDto patch) {
-        return textileService.patchMany(ids, patch);
+        return textileService.patchMany(ids, patch, textileMapper);
     }
 
     @DeleteMapping("/{id}")

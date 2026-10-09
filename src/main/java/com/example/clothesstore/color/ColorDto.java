@@ -1,4 +1,4 @@
-package com.example.clothesstore.product.color;
+package com.example.clothesstore.color;
 
 public record ColorDto(
         Integer id,

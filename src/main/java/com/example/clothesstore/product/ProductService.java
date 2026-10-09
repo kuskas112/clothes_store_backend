@@ -1,10 +1,10 @@
 package com.example.clothesstore.product;
 
-import com.example.clothesstore.product.color.Color;
-import com.example.clothesstore.product.color.ColorRepository;
+import com.example.clothesstore.color.Color;
+import com.example.clothesstore.color.ColorRepository;
 import com.example.clothesstore.product.dto.*;
-import com.example.clothesstore.product.size.Size;
-import com.example.clothesstore.product.size.SizeRepository;
+import com.example.clothesstore.size.Size;
+import com.example.clothesstore.size.SizeRepository;
 import com.example.clothesstore.textile.Textile;
 import com.example.clothesstore.textile.TextileRepository;
 import lombok.RequiredArgsConstructor;

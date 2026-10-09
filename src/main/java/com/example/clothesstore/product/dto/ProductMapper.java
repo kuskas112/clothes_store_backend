@@ -3,14 +3,11 @@ package com.example.clothesstore.product.dto;
 import com.example.clothesstore.product.Product;
 import com.example.clothesstore.product.ProductTextile;
 import com.example.clothesstore.product.ProductVariant;
-import com.example.clothesstore.product.color.Color;
-import com.example.clothesstore.product.color.ColorDto;
-import com.example.clothesstore.product.dto.*;
-import com.example.clothesstore.product.size.Size;
-import com.example.clothesstore.product.size.SizeDto;
+import com.example.clothesstore.color.Color;
+import com.example.clothesstore.color.ColorDto;
+import com.example.clothesstore.size.Size;
+import com.example.clothesstore.size.SizeDto;
 import org.mapstruct.*;
-
-import java.util.List;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface ProductMapper {

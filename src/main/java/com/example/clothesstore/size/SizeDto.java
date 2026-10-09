@@ -1,6 +1,4 @@
-package com.example.clothesstore.product.size;
-
-import com.example.clothesstore.product.size.SizeSystem;
+package com.example.clothesstore.size;
 
 public record SizeDto(
         Integer id,

@@ -1,7 +1,7 @@
 package com.example.clothesstore.product.dto;
 
-import com.example.clothesstore.product.color.ColorDto;
-import com.example.clothesstore.product.size.SizeDto;
+import com.example.clothesstore.color.ColorDto;
+import com.example.clothesstore.size.SizeDto;
 
 import java.math.BigDecimal;
 

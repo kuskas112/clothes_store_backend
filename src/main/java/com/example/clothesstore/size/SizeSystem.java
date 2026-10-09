@@ -1,4 +1,4 @@
-package com.example.clothesstore.product.size;
+package com.example.clothesstore.size;
 
 public enum SizeSystem {
     LETTER,  // XS, S, M, L, XL

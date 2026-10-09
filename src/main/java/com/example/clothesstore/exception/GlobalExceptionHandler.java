@@ -1,9 +1,5 @@
 package com.example.clothesstore.exception;
 
-import com.example.clothesstore.exception.EmailAlreadyExistsException;
-import com.example.clothesstore.exception.UserNotFoundException;
-import com.example.clothesstore.exception.ErrorResponce;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,21 +10,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponce> handleNotFound(UserNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleNotFound(UserNotFoundException ex) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(new ErrorResponce(ex.getMessage()));
+                .body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponce> handleEmailExists(EmailAlreadyExistsException ex) {
+    public ResponseEntity<ErrorResponse> handleEmailExists(EmailAlreadyExistsException ex) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(new ErrorResponce(ex.getMessage()));
+                .body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponce> handleValidation(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .reduce((a, b) -> a + "; " + b)
@@ -36,20 +32,20 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponce(message));
+                .body(new ErrorResponse(message));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponce> handleGeneric(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponce("Внутренняя ошибка сервера"));
+                .body(new ErrorResponse("Внутренняя ошибка сервера"));
     }
 
     @ExceptionHandler(UnauthorizedUserException.class)
-    public ResponseEntity<ErrorResponce> handleUnauthorizedUser(UnauthorizedUserException ex) {
+    public ResponseEntity<ErrorResponse> handleUnauthorizedUser(UnauthorizedUserException ex) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponce(ex.getMessage()));
+                .body(new ErrorResponse(ex.getMessage()));
     }
 }

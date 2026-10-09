@@ -1,7 +1,7 @@
 package com.example.clothesstore.product;
 
-import com.example.clothesstore.product.color.Color;
-import com.example.clothesstore.product.size.Size;
+import com.example.clothesstore.color.Color;
+import com.example.clothesstore.size.Size;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

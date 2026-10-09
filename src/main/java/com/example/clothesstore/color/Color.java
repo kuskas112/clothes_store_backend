@@ -1,4 +1,4 @@
-package com.example.clothesstore.product.color;
+package com.example.clothesstore.color;
 
 import jakarta.persistence.*;
 import lombok.Getter;

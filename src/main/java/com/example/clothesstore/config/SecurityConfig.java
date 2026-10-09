@@ -1,4 +1,4 @@
-package com.example.clothesstore.auth;
+package com.example.clothesstore.config;
 
 import com.example.clothesstore.user.User;
 import com.example.clothesstore.user.UserService;
@@ -27,7 +27,7 @@ public class SecurityConfig {
                         .securityContextRepository(securityContextRepository())  // ← добавьте
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/**").permitAll() // Пока что без сетевых фильтров
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

@@ -77,7 +77,7 @@ public class AuthController {
         authService.logout(httpRequest);
     }
 
-    @PostMapping("/me")
+    @GetMapping("/me")
     public UserDto me() {
         log.info("User requests itself");
         return UserDto.from(authService.me());

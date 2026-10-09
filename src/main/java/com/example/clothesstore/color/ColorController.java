@@ -1,4 +1,4 @@
-package com.example.clothesstore.product.color;
+package com.example.clothesstore.color;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

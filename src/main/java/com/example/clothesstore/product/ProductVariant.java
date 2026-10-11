@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(
@@ -53,4 +55,18 @@ public class ProductVariant {
 
     @Column(length = 50)
     private String barcode;
+
+    @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
+    private Set<ProductVariantImage> images = new LinkedHashSet<>();
+
+    public void addImage(ProductVariantImage image) {
+        images.add(image);
+        image.setVariant(this);
+    }
+
+    public void removeImage(ProductVariantImage image) {
+        images.remove(image);
+        image.setVariant(null);
+    }
 }

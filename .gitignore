@@ -70,3 +70,4 @@ application-secret.yml
 *.ear
 *.zip
 *.orig
+/.idea

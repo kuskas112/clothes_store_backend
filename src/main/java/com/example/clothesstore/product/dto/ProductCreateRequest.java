@@ -2,6 +2,7 @@ package com.example.clothesstore.product.dto;
 
 import com.example.clothesstore.product.Gender;
 import com.example.clothesstore.product.Season;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
@@ -17,6 +18,8 @@ public record ProductCreateRequest(
         Season season,
 
         @PositiveOrZero
-        BigDecimal basePrice
-) {
+        BigDecimal basePrice,
+
+        @Size(max = 10000)
+        String description) {
 }

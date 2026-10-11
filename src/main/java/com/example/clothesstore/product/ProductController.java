@@ -74,4 +74,26 @@ public class ProductController {
                                     @PathVariable Integer variantId) {
         return productService.removeVariant(productId, variantId);
     }
+
+    // ===== IMAGES =====
+
+    @PostMapping("/{productId}/images")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProductDto addImage(@PathVariable Integer productId,
+                               @RequestBody @Valid ProductImageRequest request) {
+        return productService.addImage(productId, request);
+    }
+
+    @DeleteMapping("/{productId}/images/{productImageId}")
+    public ProductDto removeImage(@PathVariable Integer productId,
+                                  @PathVariable Long productImageId) {
+        return productService.removeImage(productId, productImageId);
+    }
+
+    @PatchMapping("/{productId}/images/{productImageId}")
+    public ProductDto updateImage(@PathVariable Integer productId,
+                                  @PathVariable Long productImageId,
+                                  @RequestBody @Valid ProductImagePatchRequest request) {
+        return productService.updateImage(productId, productImageId, request);
+    }
 }

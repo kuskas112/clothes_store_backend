@@ -1,5 +1,6 @@
 package com.example.clothesstore.auth;
 
+import com.example.clothesstore.exception.UserNotFoundException;
 import com.example.clothesstore.user.User;
 import com.example.clothesstore.user.UserDto;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,7 +9,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -80,6 +84,10 @@ public class AuthController {
     @GetMapping("/me")
     public UserDto me() {
         log.info("User requests itself");
-        return UserDto.from(authService.me());
+        User user = authService.me();
+        if(user == null){
+            throw new UserNotFoundException("No such user");
+        }
+        return UserDto.from(user);
     }
 }

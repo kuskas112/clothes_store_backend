@@ -10,6 +10,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Entity
@@ -32,6 +33,10 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProductVariant> variants = new HashSet<>();
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
+    private Set<ProductImage> images = new LinkedHashSet<>();
+
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
@@ -40,6 +45,9 @@ public class Product {
 
     @Column(precision = 10, scale = 2, name = "base_price")
     private BigDecimal basePrice;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     // ===== TEXTILES =====
 
@@ -77,5 +85,17 @@ public class Product {
                         && java.util.Objects.equals(v.getSize(), size))
                 .findFirst()
                 .orElse(null);
+    }
+
+    // ===== IMAGES =========
+
+    public void addImage(ProductImage image) {
+        images.add(image);
+        image.setProduct(this);
+    }
+
+    public void removeImage(ProductImage image) {
+        images.remove(image);
+        image.setProduct(null);
     }
 }

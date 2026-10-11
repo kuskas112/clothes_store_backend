@@ -2,6 +2,9 @@ package com.example.clothesstore.product;
 
 import com.example.clothesstore.color.Color;
 import com.example.clothesstore.color.ColorRepository;
+import com.example.clothesstore.exception.ProductNotFoundException;
+import com.example.clothesstore.image.Image;
+import com.example.clothesstore.image.ImageRepository;
 import com.example.clothesstore.product.dto.*;
 import com.example.clothesstore.size.Size;
 import com.example.clothesstore.size.SizeRepository;
@@ -26,6 +29,7 @@ public class ProductService {
     private final TextileRepository textileRepository;
     private final SizeRepository sizeRepository;
     private final ColorRepository colorRepository;
+    private final ImageRepository imageRepository;
 
     // ===== READ =====
 
@@ -38,8 +42,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductDto getOne(Integer id) {
         Product product = productRepository.findWithDetailsById(id).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
+                new ProductNotFoundException(
                         "Product with id `%s` not found".formatted(id)));
         return productMapper.toDto(product);
     }
@@ -199,5 +202,84 @@ public class ProductService {
 
         Product saved = productRepository.save(product);
         return productMapper.toDto(saved);
+    }
+
+    @Transactional
+    public ProductDto addImage(Integer productId, ProductImageRequest request) {
+        Product product = productRepository.findWithDetailsById(productId)
+                .orElseThrow(() -> new RuntimeException("no such product"));
+
+        Image image = imageRepository.findById(request.imageId())
+                .orElseThrow(() -> new RuntimeException("no such request.imageId()"));
+
+        if (product.getImages().stream()
+                .anyMatch(pi -> pi.getImage().getId().equals(image.getId()))) {
+            throw new IllegalArgumentException("Image already attached to product");
+        }
+
+        ProductImage pi = new ProductImage();
+        pi.setImage(image);
+        pi.setAltText(request.altText());
+        pi.setSortOrder(request.sortOrder() != null ? request.sortOrder() : product.getImages().size());
+        pi.setIsMain(Boolean.TRUE.equals(request.isMain()));
+
+        if (pi.getIsMain()) {
+            product.getImages().forEach(existing -> existing.setIsMain(false));
+        }
+
+        product.addImage(pi);
+        productRepository.save(product);
+
+        return productMapper.toDto(product);
+    }
+
+    @Transactional
+    public ProductDto removeImage(Integer productId, Long productImageId) {
+        Product product = productRepository.findWithDetailsById(productId)
+                .orElseThrow(() -> new RuntimeException("no productId"));
+
+        ProductImage pi = product.getImages().stream()
+                .filter(x -> x.getId().equals(productImageId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("no productImageId"));
+
+        product.removeImage(pi);
+
+        // если удалили главную — назначить первую оставшуюся
+        if (Boolean.TRUE.equals(pi.getIsMain()) && !product.getImages().isEmpty()) {
+            product.getImages().iterator().next().setIsMain(true);
+        }
+
+        productRepository.save(product);
+
+        return productMapper.toDto(product);
+    }
+
+    @Transactional
+    public ProductDto updateImage(Integer productId, Long productImageId, ProductImagePatchRequest request) {
+        Product product = productRepository.findWithDetailsById(productId)
+                .orElseThrow(() -> new RuntimeException("no productId"));
+
+        ProductImage pi = product.getImages().stream()
+                .filter(x -> x.getId().equals(productImageId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("no productImageId"));
+
+        if (request.altText() != null) {
+            pi.setAltText(request.altText());
+        }
+        if (request.sortOrder() != null) {
+            pi.setSortOrder(request.sortOrder());
+        }
+        if (request.isMain() != null) {
+            if (request.isMain()) {
+                product.getImages().forEach(existing -> existing.setIsMain(false));
+            }
+            pi.setIsMain(request.isMain());
+        }
+
+        productRepository.save(product);
+
+        return productMapper.toDto(product);
     }
 }

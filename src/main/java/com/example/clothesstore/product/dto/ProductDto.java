@@ -12,7 +12,9 @@ public record ProductDto(
         Gender gender,
         Season season,
         BigDecimal basePrice,
+        String description,
         List<ProductVariantDto> variants,
-        List<ProductTextileDto> textiles
+        List<ProductTextileDto> textiles,
+        List<ProductImageDto> images
 ) {
 }

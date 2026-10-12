@@ -35,7 +35,7 @@ public class LocalImageStorageService implements ImageStorageService {
     public record ImageDimensions(Integer width, Integer height) {}
 
     @Override
-    public ImageDto store(MultipartFile file) {
+    public Image store(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             log.warn("Rejected empty file");
             throw new IllegalArgumentException("File is empty");
@@ -78,15 +78,16 @@ public class LocalImageStorageService implements ImageStorageService {
                     dims != null ? dims.height() : null,
                     checksum);
 
-            return new ImageDto(
-                    storageKey,
-                    file.getOriginalFilename(),
-                    contentType,
-                    file.getSize(),
-                    checksum,
-                    dims != null ? dims.width() : null,
-                    dims != null ? dims.height() : null
-            );
+            var image = new Image();
+            image.setStorageKey(storageKey);
+            image.setOriginalFilename(file.getOriginalFilename());
+            image.setContentType(contentType);
+            image.setSizeBytes(file.getSize());
+            image.setChecksum(checksum);
+            image.setWidth(dims != null ? dims.width() : null);
+            image.setHeight(dims != null ? dims.height() : null);
+
+            return image;
         } catch (IOException | NoSuchAlgorithmException e) {
             log.error("Failed to store image: name={}, key={}", file.getOriginalFilename(), storageKey, e);
             throw new RuntimeException("Failed to store file", e);

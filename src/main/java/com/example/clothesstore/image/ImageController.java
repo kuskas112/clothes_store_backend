@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -35,8 +37,8 @@ public class ImageController {
             return ResponseEntity.ok(imageMapper.toResponse(existing.get()));
         }
 
-        ImageDto stored = storageService.store(file);
-        Image saved = imageRepository.save(imageMapper.toEntity(stored));
+        Image stored = storageService.store(file);
+        Image saved = imageRepository.save(stored);
         log.info("Registered image: id={}, key={}", saved.getId(), saved.getStorageKey());
         return ResponseEntity.status(HttpStatus.CREATED).body(imageMapper.toResponse(saved));
     }
@@ -48,5 +50,21 @@ public class ImageController {
         Page<ImageResponse> page = imageRepository.findAll(pageable)
                 .map(imageMapper::toResponse);
         return new PagedModel<>(page);
+    }
+
+    @PostMapping(value = "/batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<List<ImageResponse>> uploadMany(
+            @RequestParam("files") List<MultipartFile> files) {
+        List<ImageResponse> result = new ArrayList<>();
+        for (MultipartFile file : files) {
+            String checksum = storageService.calculateChecksum(file);
+            Image image = imageRepository.findByChecksum(checksum)
+                    .orElseGet(() -> {
+                        Image stored = storageService.store(file);
+                        return imageRepository.save(stored);
+                    });
+            result.add(imageMapper.toResponse(image));
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 }

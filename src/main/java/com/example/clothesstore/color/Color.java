@@ -20,6 +20,6 @@ public class Color {
     @Column(length = 7)
     private String hex;       // "#FF0000" — для UI
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, unique = true)
     private String code;      // "RED" — для SKU
 }

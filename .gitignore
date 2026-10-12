@@ -71,3 +71,5 @@ application-secret.yml
 *.zip
 *.orig
 /.idea
+.idea/compiler.xml
+/.idea

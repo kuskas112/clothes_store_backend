@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.List;
 
-@Component
 @Profile("dev")
 @RequiredArgsConstructor
 public class ProductDataSeeder implements CommandLineRunner {

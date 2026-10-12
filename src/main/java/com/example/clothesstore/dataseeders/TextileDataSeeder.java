@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.List;
 
-@Component
 @Profile("dev")
 @Order(1) // запустится раньше ProductDataSeeder
 @RequiredArgsConstructor

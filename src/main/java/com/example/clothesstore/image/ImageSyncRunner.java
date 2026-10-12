@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class ImageSyncRunner implements ApplicationRunner {
     // Синхронизирует изображения в uploads c БД для тестов

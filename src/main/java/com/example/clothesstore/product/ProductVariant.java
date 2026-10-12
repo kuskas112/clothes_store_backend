@@ -53,7 +53,7 @@ public class ProductVariant {
     @Column(precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(length = 50)
+    @Column(length = 50, unique = true)
     private String barcode;
 
     @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true)

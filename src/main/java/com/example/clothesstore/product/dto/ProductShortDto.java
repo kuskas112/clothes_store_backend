@@ -11,6 +11,6 @@ public record ProductShortDto(
         Gender gender,
         Season season,
         BigDecimal basePrice,
-        Integer variantCount
+        String previewImageUrl
 ) {
 }

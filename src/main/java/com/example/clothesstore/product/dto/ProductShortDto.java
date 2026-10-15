@@ -1,7 +1,7 @@
 package com.example.clothesstore.product.dto;
 
-import com.example.clothesstore.product.Gender;
-import com.example.clothesstore.product.Season;
+import com.example.clothesstore.product.jpa.Gender;
+import com.example.clothesstore.product.jpa.Season;
 
 import java.math.BigDecimal;
 

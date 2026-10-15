@@ -1,9 +1,9 @@
 package com.example.clothesstore.product.dto;
 
 import com.example.clothesstore.image.ImageMapper;
-import com.example.clothesstore.product.Product;
-import com.example.clothesstore.product.ProductTextile;
-import com.example.clothesstore.product.ProductVariant;
+import com.example.clothesstore.product.jpa.Product;
+import com.example.clothesstore.product.jpa.ProductTextile;
+import com.example.clothesstore.product.jpa.ProductVariant;
 import com.example.clothesstore.color.Color;
 import com.example.clothesstore.color.ColorDto;
 import com.example.clothesstore.product.dto.request.ProductCreateRequest;

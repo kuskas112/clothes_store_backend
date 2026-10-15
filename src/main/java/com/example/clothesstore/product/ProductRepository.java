@@ -1,5 +1,6 @@
 package com.example.clothesstore.product;
 
+import com.example.clothesstore.product.jpa.Product;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 

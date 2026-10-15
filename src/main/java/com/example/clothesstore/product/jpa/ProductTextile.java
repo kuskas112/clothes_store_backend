@@ -1,4 +1,4 @@
-package com.example.clothesstore.product;
+package com.example.clothesstore.product.jpa;
 
 import com.example.clothesstore.textile.Textile;
 import jakarta.persistence.*;

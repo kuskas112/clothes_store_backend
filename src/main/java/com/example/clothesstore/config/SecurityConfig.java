@@ -27,7 +27,8 @@ public class SecurityConfig {
                         .securityContextRepository(securityContextRepository())  // ← добавьте
                 )
                 .authorizeHttpRequests(auth -> auth
-                        //.requestMatchers("/api/admin/").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/auth/me", "/api/auth/logout").authenticated()
                         .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session

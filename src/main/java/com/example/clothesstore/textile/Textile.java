@@ -1,6 +1,6 @@
 package com.example.clothesstore.textile;
 
-import com.example.clothesstore.product.ProductTextile;
+import com.example.clothesstore.product.jpa.ProductTextile;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;

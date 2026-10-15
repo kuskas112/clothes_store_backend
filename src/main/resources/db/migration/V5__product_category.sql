@@ -8,8 +8,8 @@ CREATE TABLE product_category (
     is_primary boolean NOT NULL DEFAULT false,
     PRIMARY KEY (id),
     CONSTRAINT uk_product_category UNIQUE (product_id, category_id),
-    CONSTRAINT fk_product_category_product FOREIGN KEY (product_id) REFERENCES product (id),
-    CONSTRAINT fk_product_category_category FOREIGN KEY (category_id) REFERENCES category (id)
+    CONSTRAINT fk_product_category_product FOREIGN KEY (product_id) REFERENCES product (id) ON DELETE CASCADE,
+    CONSTRAINT fk_product_category_category FOREIGN KEY (category_id) REFERENCES category (id) ON DELETE CASCADE
 );
 
 -- Верхняя одежда для продуктов 1-5

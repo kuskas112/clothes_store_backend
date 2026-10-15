@@ -1,7 +1,7 @@
 package com.example.clothesstore.product.dto.request;
 
-import com.example.clothesstore.product.Gender;
-import com.example.clothesstore.product.Season;
+import com.example.clothesstore.product.jpa.Gender;
+import com.example.clothesstore.product.jpa.Season;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;

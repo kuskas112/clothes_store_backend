@@ -126,21 +126,21 @@ create table users (
 alter table if exists product_image
     add constraint fk_product_image_image foreign key (image_id) references image;
 alter table if exists product_image
-    add constraint fk_product_image_product foreign key (product_id) references product;
+    add constraint fk_product_image_product foreign key (product_id) references product on delete cascade;
 
 alter table if exists product_textile
-    add constraint fk_product_textile_product foreign key (product_id) references product;
+    add constraint fk_product_textile_product foreign key (product_id) references product on delete cascade;
 alter table if exists product_textile
     add constraint fk_product_textile_textile foreign key (textile_id) references textile;
 
 alter table if exists product_variant
     add constraint fk_product_variant_color foreign key (color_id) references color;
 alter table if exists product_variant
-    add constraint fk_product_variant_product foreign key (product_id) references product;
+    add constraint fk_product_variant_product foreign key (product_id) references product on delete cascade;
 alter table if exists product_variant
     add constraint fk_product_variant_size foreign key (size_id) references size;
 
 alter table if exists product_variant_image
     add constraint fk_product_variant_image_image foreign key (image_id) references image;
 alter table if exists product_variant_image
-    add constraint fk_product_variant_image_variant foreign key (variant_id) references product_variant;
+    add constraint fk_product_variant_image_variant foreign key (variant_id) references product_variant on delete cascade;

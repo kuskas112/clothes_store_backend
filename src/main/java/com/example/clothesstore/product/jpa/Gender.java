@@ -1,4 +1,4 @@
-package com.example.clothesstore.product;
+package com.example.clothesstore.product.jpa;
 
 public enum Gender {
     MAN,

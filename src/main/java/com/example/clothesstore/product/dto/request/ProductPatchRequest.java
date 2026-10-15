@@ -1,4 +1,4 @@
-package com.example.clothesstore.product.dto;
+package com.example.clothesstore.product.dto.request;
 
 import com.example.clothesstore.product.Gender;
 import com.example.clothesstore.product.Season;

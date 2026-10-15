@@ -1,6 +1,7 @@
 package com.example.clothesstore.product;
 
 import com.example.clothesstore.product.dto.*;
+import com.example.clothesstore.product.dto.request.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

@@ -6,6 +6,7 @@ import com.example.clothesstore.exception.ProductNotFoundException;
 import com.example.clothesstore.image.Image;
 import com.example.clothesstore.image.ImageRepository;
 import com.example.clothesstore.product.dto.*;
+import com.example.clothesstore.product.dto.request.*;
 import com.example.clothesstore.size.Size;
 import com.example.clothesstore.size.SizeRepository;
 import com.example.clothesstore.textile.Textile;

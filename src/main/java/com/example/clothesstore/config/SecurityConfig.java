@@ -27,8 +27,8 @@ public class SecurityConfig {
                         .securityContextRepository(securityContextRepository())  // ← добавьте
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/**").permitAll() // Пока что без сетевых фильтров
-                        .anyRequest().authenticated()
+                        //.requestMatchers("/api/admin/").hasRole("ADMIN")
+                        .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)

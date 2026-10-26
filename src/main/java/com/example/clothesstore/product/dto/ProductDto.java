@@ -12,6 +12,7 @@ public record ProductDto(
         Gender gender,
         Season season,
         BigDecimal basePrice,
+        BigDecimal discountedPrice,
         String description,
         List<ProductVariantDto> variants,
         List<ProductTextileDto> textiles,

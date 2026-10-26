@@ -46,6 +46,9 @@ public class Product {
     @Column(precision = 10, scale = 2, name = "base_price")
     private BigDecimal basePrice;
 
+    @Column(precision = 10, scale = 2, name = "discounted_price")
+    private BigDecimal discountedPrice;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

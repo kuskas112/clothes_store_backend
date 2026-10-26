@@ -32,6 +32,7 @@ create table product (
     gender varchar(255) check (gender in ('MAN','WOMAN','UNISEX')),
     season varchar(255) check (season in ('SUMMER','WINTER','DEMI_SEASON','ALL_SEASON')),
     base_price numeric(10,2),
+    discounted_price numeric(10,2),
     primary key (id),
     constraint uk_product_name unique (name)
 );

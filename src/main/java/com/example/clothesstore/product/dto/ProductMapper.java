@@ -70,6 +70,7 @@ public abstract class ProductMapper {
                 product.getGender(),
                 product.getSeason(),
                 product.getBasePrice(),
+                product.getDiscountedPrice(),
                 url
         );
     }

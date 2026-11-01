@@ -3,7 +3,13 @@ package com.example.clothesstore.exception;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
+
+import jakarta.validation.ConstraintViolationException;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,5 +51,40 @@ class GlobalExceptionHandlerTest {
         var response = handler.handleGeneric(new IllegalStateException("boom"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    void badCredentialsBecome401() {
+        var response = handler.handleAuthentication(new BadCredentialsException("Bad credentials"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void accessDeniedBecomes403() {
+        var response = handler.handleAccessDenied(new AccessDeniedException("nope"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void illegalArgumentBecomes400() {
+        var response = handler.handleBadRequest(new IllegalArgumentException("bad input"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void tooLargeUploadBecomes413() {
+        var response = handler.handleUploadTooLarge(new MaxUploadSizeExceededException(1024));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    @Test
+    void constraintViolationBecomes400() {
+        var response = handler.handleConstraintViolation(new ConstraintViolationException(Set.of()));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 }

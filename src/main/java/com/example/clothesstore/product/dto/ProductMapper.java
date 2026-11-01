@@ -56,13 +56,17 @@ public abstract class ProductMapper {
     public abstract void updateEntity(ProductPatchRequest request, @MappingTarget Product product);
 
     public ProductShortDto toShortDto(Product product){
-        String url = null;
-        for(var img : product.getImages()){
-            if(img.getIsMain()){
-                url = imageMapper.toResponse(img.getImage()).url();
-                break;
-            }
-        }
+        String url = product.getImages().stream()
+                .filter(pi -> pi.getImage() != null)
+                .filter(pi -> Boolean.TRUE.equals(pi.getIsMain()))
+                .findFirst()
+                // fallback: если главная не помечена, берём первую по sortOrder,
+                // иначе товар с картинками уходил на витрину без превью.
+                .or(() -> product.getImages().stream()
+                        .filter(pi -> pi.getImage() != null)
+                        .findFirst())
+                .map(pi -> imageMapper.toResponse(pi.getImage()).url())
+                .orElse(null);
 
         return new ProductShortDto(
                 product.getId(),

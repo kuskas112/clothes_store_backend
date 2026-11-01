@@ -19,6 +19,9 @@ public record ProductCreateRequest(
         @PositiveOrZero
         BigDecimal basePrice,
 
+        @PositiveOrZero
+        BigDecimal discountedPrice,
+
         @Size(max = 10000)
         String description) {
 }

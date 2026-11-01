@@ -29,13 +29,7 @@ public class UserService {
 
     // === Создание ===
     public User createUser(String email, String password) {
-        if (userRepository.existsByEmail(email)) {
-            throw new EmailAlreadyExistsException(email);
-        }
-        String hashed = passwordEncoder.encode(password);
-        User user = userRepository.save(new User(email, hashed));
-        log.info("User {} created", email);
-        return user;
+        return createUser(email, password, null, null);
     }
 
     public User createUser(
@@ -44,6 +38,8 @@ public class UserService {
             String firstName,
             String lastName
     ) {
+        // Быстрая проверка для понятной ошибки; гонку ловит unique-констрейнт
+        // и GlobalExceptionHandler (DataIntegrityViolationException -> 409).
         if (userRepository.existsByEmail(email)) {
             throw new EmailAlreadyExistsException(email);
         }
@@ -62,8 +58,13 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
+        return findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     // === Чтение всех ===

@@ -5,10 +5,11 @@ import com.example.clothesstore.category.dto.CategoryRefDto;
 import com.example.clothesstore.product.dto.*;
 import com.example.clothesstore.product.dto.request.*;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +29,8 @@ public class AdminProductController {
     // ===== CRUD =====
 
     @GetMapping
-    public PagedModel<ProductShortDto> getAll(Pageable pageable) {
+    public PagedModel<ProductShortDto> getAll(
+            @PageableDefault(size = 20, sort = "id") Pageable pageable) {
         Page<ProductShortDto> page = productService.getAll(pageable);
         return new PagedModel<>(page);
     }
@@ -39,7 +41,8 @@ public class AdminProductController {
     }
 
     @GetMapping("/by-ids")
-    public List<ProductShortDto> getMany(@RequestParam List<Integer> ids) {
+    public List<ProductShortDto> getMany(
+            @RequestParam @Size(max = 100) List<Integer> ids) {
         return productService.getMany(ids);
     }
 
@@ -51,7 +54,7 @@ public class AdminProductController {
 
     @PatchMapping("/{id}")
     public ProductDto update(@PathVariable Integer id,
-                             @RequestBody ProductPatchRequest request) {
+                             @RequestBody @Valid ProductPatchRequest request) {
         return productService.update(id, request);
     }
 
@@ -63,7 +66,8 @@ public class AdminProductController {
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteMany(@RequestParam List<Integer> ids) {
+    public void deleteMany(
+            @RequestParam @Size(max = 100) List<Integer> ids) {
         productService.deleteMany(ids);
     }
 

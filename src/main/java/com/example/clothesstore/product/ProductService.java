@@ -9,6 +9,7 @@ import com.example.clothesstore.product.dto.*;
 import com.example.clothesstore.product.dto.request.*;
 import com.example.clothesstore.product.jpa.Product;
 import com.example.clothesstore.product.jpa.ProductImage;
+import com.example.clothesstore.product.jpa.ProductTextile;
 import com.example.clothesstore.product.jpa.ProductVariant;
 import com.example.clothesstore.size.Size;
 import com.example.clothesstore.size.SizeRepository;
@@ -23,6 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,10 +42,27 @@ public class ProductService {
 
     // ===== READ =====
 
+    /**
+     * Две выборки вместо N+1:
+     * 1) страница товаров,
+     * 2) все изображения для этих товаров через EntityGraph.
+     */
     @Transactional(readOnly = true)
     public Page<ProductShortDto> getAll(Pageable pageable) {
-        return productRepository.findAll(pageable)
-                .map(productMapper::toShortDto);
+        Page<Product> page = productRepository.findAll(pageable);
+        List<Integer> ids = page.getContent().stream()
+                .map(Product::getId)
+                .toList();
+
+        if (ids.isEmpty()) {
+            return page.map(productMapper::toShortDto);
+        }
+
+        Map<Integer, Product> withImages = productRepository.findWithImagesByIdIn(ids).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity(), (a, b) -> a));
+
+        return page.map(product -> productMapper.toShortDto(
+                withImages.getOrDefault(product.getId(), product)));
     }
 
     @Transactional(readOnly = true)
@@ -51,9 +73,23 @@ public class ProductService {
         return productMapper.toDto(product);
     }
 
+    /**
+     * Порядок ids сохраняется (findAllById его не гарантирует), изображения
+     * подтягиваются одним запросом.
+     */
     @Transactional(readOnly = true)
     public List<ProductShortDto> getMany(List<Integer> ids) {
-        return productRepository.findAllById(ids).stream()
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Integer, Product> byId = productRepository.findWithImagesByIdIn(ids).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity(), (a, b) -> a));
+
+        return ids.stream()
+                .distinct()
+                .map(byId::get)
+                .filter(Objects::nonNull)
                 .map(productMapper::toShortDto)
                 .toList();
     }
@@ -72,9 +108,7 @@ public class ProductService {
     @Transactional
     public ProductDto update(Integer id, ProductPatchRequest request) {
         Product product = productRepository.findWithDetailsById(id).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Product with id `%s` not found".formatted(id)));
+                new ProductNotFoundException("Product with id `%s` not found".formatted(id)));
         productMapper.updateEntity(request, product);
         Product saved = productRepository.save(product);
         return productMapper.toDto(saved);
@@ -85,9 +119,7 @@ public class ProductService {
     @Transactional
     public void delete(Integer id) {
         Product product = productRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Product with id `%s` not found".formatted(id)));
+                new ProductNotFoundException("Product with id `%s` not found".formatted(id)));
         productRepository.delete(product);
     }
 
@@ -101,33 +133,30 @@ public class ProductService {
     @Transactional
     public ProductDto addVariant(Integer productId, ProductVariantCreateRequest request) {
         Product product = productRepository.findWithDetailsById(productId).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Product with id `%s` not found".formatted(productId)));
+                new ProductNotFoundException("Product with id `%s` not found".formatted(productId)));
 
         ProductVariant variant = productMapper.toEntity(request);
 
-        if(request.sizeId() != null){
+        if (request.sizeId() != null) {
             Size size = sizeRepository.findById(request.sizeId()).orElseThrow(() ->
                     new ResponseStatusException(
                             HttpStatus.NOT_FOUND,
-                            "Size with id `%s` not found".formatted(request.sizeId()))
-            );
+                            "Size with id `%s` not found".formatted(request.sizeId())));
             variant.setSize(size);
         }
 
         if (request.colorId() != null) {
             Color color = colorRepository.findById(request.colorId()).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Color with id `%s` not found".formatted(request.colorId())
-                )
-            );
+                    new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Color with id `%s` not found".formatted(request.colorId())));
             variant.setColor(color);
         }
 
         product.addVariant(variant);
 
+        // Дубликат (product, color, size) или sku ловит unique-констрейнт,
+        // GlobalExceptionHandler вернёт 409.
         Product saved = productRepository.save(product);
         return productMapper.toDto(saved);
     }
@@ -135,14 +164,17 @@ public class ProductService {
     @Transactional
     public ProductDto removeVariant(Integer productId, Integer variantId) {
         Product product = productRepository.findWithDetailsById(productId).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Product with id `%s` not found".formatted(productId)));
+                new ProductNotFoundException("Product with id `%s` not found".formatted(productId)));
 
-        product.getVariants().stream()
+        ProductVariant variant = product.getVariants().stream()
                 .filter(v -> v.getId().equals(variantId))
                 .findFirst()
-                .ifPresent(product::removeVariant);
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Variant with id `%s` is not linked to product `%s`"
+                                .formatted(variantId, productId)));
+
+        product.removeVariant(variant);
 
         Product saved = productRepository.save(product);
         return productMapper.toDto(saved);
@@ -153,9 +185,7 @@ public class ProductService {
     @Transactional
     public ProductDto addTextile(Integer productId, ProductTextileRequest request) {
         Product product = productRepository.findWithDetailsById(productId).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Product with id `%s` not found".formatted(productId)));
+                new ProductNotFoundException("Product with id `%s` not found".formatted(productId)));
 
         Textile textile = textileRepository.findById(request.textileId()).orElseThrow(() ->
                 new ResponseStatusException(
@@ -172,15 +202,19 @@ public class ProductService {
                             .formatted(textile.getId(), productId));
         }
 
-        // Создаём связь через метод сущности Product
         product.addTextile(textile, request.percentage());
 
-        // Если в ProductTextileRequest есть primaryFabric — выставляем
-        if (request.primaryFabric() != null) {
-            product.getTextiles().stream()
-                    .filter(pt -> pt.getTextile().getId().equals(textile.getId()))
-                    .findFirst()
-                    .ifPresent(pt -> pt.setPrimaryFabric(request.primaryFabric()));
+        ProductTextile link = product.getTextiles().stream()
+                .filter(pt -> pt.getTextile().getId().equals(textile.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        // Основная ткань должна быть одна: снимаем флаг с остальных.
+        if (Boolean.TRUE.equals(request.primaryFabric())) {
+            product.getTextiles().forEach(pt -> pt.setPrimaryFabric(false));
+            link.setPrimaryFabric(true);
+        } else if (request.primaryFabric() != null) {
+            link.setPrimaryFabric(false);
         }
 
         Product saved = productRepository.save(product);
@@ -190,9 +224,7 @@ public class ProductService {
     @Transactional
     public ProductDto removeTextile(Integer productId, Integer textileId) {
         Product product = productRepository.findWithDetailsById(productId).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Product with id `%s` not found".formatted(productId)));
+                new ProductNotFoundException("Product with id `%s` not found".formatted(productId)));
 
         boolean removed = product.getTextiles().removeIf(
                 pt -> pt.getTextile().getId().equals(textileId));
@@ -208,23 +240,30 @@ public class ProductService {
         return productMapper.toDto(saved);
     }
 
+    // ===== IMAGES =====
+
     @Transactional
     public ProductDto addImage(Integer productId, ProductImageRequest request) {
-        Product product = productRepository.findWithDetailsById(productId)
-                .orElseThrow(() -> new RuntimeException("no such product"));
+        Product product = productRepository.findWithDetailsById(productId).orElseThrow(() ->
+                new ProductNotFoundException("Product with id `%s` not found".formatted(productId)));
 
-        Image image = imageRepository.findById(request.imageId())
-                .orElseThrow(() -> new RuntimeException("no such request.imageId()"));
+        Image image = imageRepository.findById(request.imageId()).orElseThrow(() ->
+                new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Image with id `%s` not found".formatted(request.imageId())));
 
         if (product.getImages().stream()
                 .anyMatch(pi -> pi.getImage().getId().equals(image.getId()))) {
-            throw new IllegalArgumentException("Image already attached to product");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Image with id `%s` is already attached to product `%s`"
+                            .formatted(image.getId(), productId));
         }
 
         ProductImage pi = new ProductImage();
         pi.setImage(image);
         pi.setAltText(request.altText());
-        pi.setSortOrder(request.sortOrder() != null ? request.sortOrder() : product.getImages().size());
+        pi.setSortOrder(request.sortOrder() != null ? request.sortOrder() : nextSortOrder(product));
         pi.setIsMain(Boolean.TRUE.equals(request.isMain()));
 
         if (pi.getIsMain()) {
@@ -232,42 +271,46 @@ public class ProductService {
         }
 
         product.addImage(pi);
-        productRepository.save(product);
+        Product saved = productRepository.save(product);
 
-        return productMapper.toDto(product);
+        return productMapper.toDto(saved);
     }
 
     @Transactional
     public ProductDto removeImage(Integer productId, Long productImageId) {
-        Product product = productRepository.findWithDetailsById(productId)
-                .orElseThrow(() -> new RuntimeException("no productId"));
+        Product product = productRepository.findWithDetailsById(productId).orElseThrow(() ->
+                new ProductNotFoundException("Product with id `%s` not found".formatted(productId)));
 
         ProductImage pi = product.getImages().stream()
                 .filter(x -> x.getId().equals(productImageId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("no productImageId"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Product image with id `%s` not found".formatted(productImageId)));
 
+        boolean wasMain = Boolean.TRUE.equals(pi.getIsMain());
         product.removeImage(pi);
 
         // если удалили главную — назначить первую оставшуюся
-        if (Boolean.TRUE.equals(pi.getIsMain()) && !product.getImages().isEmpty()) {
+        if (wasMain && !product.getImages().isEmpty()) {
             product.getImages().iterator().next().setIsMain(true);
         }
 
-        productRepository.save(product);
-
-        return productMapper.toDto(product);
+        Product saved = productRepository.save(product);
+        return productMapper.toDto(saved);
     }
 
     @Transactional
     public ProductDto updateImage(Integer productId, Long productImageId, ProductImagePatchRequest request) {
-        Product product = productRepository.findWithDetailsById(productId)
-                .orElseThrow(() -> new RuntimeException("no productId"));
+        Product product = productRepository.findWithDetailsById(productId).orElseThrow(() ->
+                new ProductNotFoundException("Product with id `%s` not found".formatted(productId)));
 
         ProductImage pi = product.getImages().stream()
                 .filter(x -> x.getId().equals(productImageId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("no productImageId"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Product image with id `%s` not found".formatted(productImageId)));
 
         if (request.altText() != null) {
             pi.setAltText(request.altText());
@@ -282,8 +325,17 @@ public class ProductService {
             pi.setIsMain(request.isMain());
         }
 
-        productRepository.save(product);
+        Product saved = productRepository.save(product);
 
-        return productMapper.toDto(product);
+        return productMapper.toDto(saved);
+    }
+
+    private static int nextSortOrder(Product product) {
+        return product.getImages().stream()
+                .map(ProductImage::getSortOrder)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(-1) + 1;
     }
 }

@@ -34,9 +34,10 @@ public class ImageMapper {
     }
 
     public ImageResponse toResponse(Image image) {
+        String prefix = baseUrl == null ? "" : baseUrl.replaceAll("/+$", "");
         return new ImageResponse(
                 image.getId(),
-                baseUrl + "/" + image.getStorageKey(),
+                prefix + "/" + image.getStorageKey(),
                 image.getAltText(),
                 image.getWidth(),
                 image.getHeight()

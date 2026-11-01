@@ -1,7 +1,9 @@
 package com.example.clothesstore.user;
 
-import com.example.clothesstore.auth.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,13 +19,22 @@ public class UserController {
         this.userService = userService;
     }
 
-    public record CreateUserRequest(String email, String password) {}
-    public record UpdateUserRequest(String email, String phone, String firstName, String lastName) {}
+    public record CreateUserRequest(
+            @NotBlank @Email @Size(max = 100) String email,
+            @NotBlank @Size(min = 8, max = 72) String password
+    ) {}
+
+    public record UpdateUserRequest(
+            @NotBlank @Email @Size(max = 100) String email,
+            @Size(max = 20) String phone,
+            @Size(max = 50) String firstName,
+            @Size(max = 50) String lastName
+    ) {}
 
     // === Создание ===
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDto createUser(@RequestBody CreateUserRequest request) {
+    public UserDto createUser(@RequestBody @Valid CreateUserRequest request) {
         User user = userService.createUser(
                 request.email(),
                 request.password()
@@ -52,7 +63,7 @@ public class UserController {
     @PutMapping("/{id}")
     public UserDto updateUser(
             @PathVariable Long id,
-            @RequestBody UpdateUserRequest request
+            @RequestBody @Valid UpdateUserRequest request
     ) {
         User user = userService.updateUser(
                 id,

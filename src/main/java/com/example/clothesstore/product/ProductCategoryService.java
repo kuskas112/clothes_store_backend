@@ -6,8 +6,10 @@ import com.example.clothesstore.exception.ProductNotFoundException;
 import com.example.clothesstore.product.jpa.Product;
 import com.example.clothesstore.product.jpa.ProductCategory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +28,8 @@ public class ProductCategoryService {
                 .orElseThrow(() -> new ProductNotFoundException("Product with id `%s` not found".formatted(productId)));
 
         if (productCategoryRepository.existsByProductIdAndCategoryId(productId, categoryId)) {
-            throw new IllegalArgumentException(
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
                     "Category %d is already linked to product %d".formatted(categoryId, productId));
         }
 
@@ -47,28 +50,22 @@ public class ProductCategoryService {
 
     @Transactional
     public void removeCategory(Integer productId, Long productCategoryId) {
-        ProductCategory link = productCategoryRepository.findById(productCategoryId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "ProductCategory %d not found".formatted(productCategoryId)));
+        ProductCategory link = requireLinkOfProduct(productId, productCategoryId);
 
-        if (!link.getProduct().getId().equals(productId)) {
-            throw new IllegalArgumentException(
-                    "ProductCategory %d does not belong to product %d".formatted(productCategoryId, productId));
-        }
-
+        boolean wasPrimary = Boolean.TRUE.equals(link.getIsPrimary());
         productCategoryRepository.delete(link);
+
+        // Главная категория должна остаться: назначаем первую оставшуюся.
+        if (wasPrimary) {
+            productCategoryRepository.findByProductIdOrderBySortOrderAscIdAsc(productId).stream()
+                    .findFirst()
+                    .ifPresent(next -> next.setIsPrimary(true));
+        }
     }
 
     @Transactional
     public void updateCategory(Integer productId, Long productCategoryId, Integer sortOrder, Boolean isPrimary) {
-        ProductCategory link = productCategoryRepository.findById(productCategoryId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "ProductCategory %d not found".formatted(productCategoryId)));
-
-        if (!link.getProduct().getId().equals(productId)) {
-            throw new IllegalArgumentException(
-                    "ProductCategory %d does not belong to product %d".formatted(productCategoryId, productId));
-        }
+        ProductCategory link = requireLinkOfProduct(productId, productCategoryId);
 
         if (sortOrder != null) {
             link.setSortOrder(sortOrder);
@@ -85,11 +82,25 @@ public class ProductCategoryService {
     @Transactional(readOnly = true)
     public List<Category> getCategoriesForProduct(Integer productId) {
         List<ProductCategory> links = productCategoryRepository.findByProductIdOrderBySortOrderAscIdAsc(productId);
-        List<Category> result = new ArrayList<>();
+        List<Category> result = new ArrayList<>(links.size());
         for (ProductCategory link : links) {
             result.add(link.getCategory());
         }
         return result;
+    }
+
+    private ProductCategory requireLinkOfProduct(Integer productId, Long productCategoryId) {
+        ProductCategory link = productCategoryRepository.findById(productCategoryId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "ProductCategory %d not found".formatted(productCategoryId)));
+
+        if (!link.getProduct().getId().equals(productId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "ProductCategory %d does not belong to product %d".formatted(productCategoryId, productId));
+        }
+        return link;
     }
 
     private void clearPrimaryForProduct(Integer productId) {

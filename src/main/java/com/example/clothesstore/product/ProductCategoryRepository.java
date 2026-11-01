@@ -1,6 +1,7 @@
 package com.example.clothesstore.product;
 
 import com.example.clothesstore.product.jpa.ProductCategory;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,6 +12,7 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
 
     List<ProductCategory> findByProductId(Integer productId);
 
+    @EntityGraph(attributePaths = "category")
     List<ProductCategory> findByProductIdOrderBySortOrderAscIdAsc(Integer productId);
 
     List<ProductCategory> findByCategoryId(Long categoryId);
@@ -19,6 +21,9 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
 
     void deleteByProductIdAndCategoryId(Integer productId, Long categoryId);
 
+    /**
+     * Батч-загрузка категорий для набора товаров: один запрос вместо N.
+     */
     @Query("""
         select pc from ProductCategory pc
         join fetch pc.category

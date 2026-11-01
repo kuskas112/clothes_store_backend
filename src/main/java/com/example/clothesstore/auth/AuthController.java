@@ -1,18 +1,18 @@
 package com.example.clothesstore.auth;
 
-import com.example.clothesstore.exception.UserNotFoundException;
+import com.example.clothesstore.exception.UnauthorizedUserException;
 import com.example.clothesstore.user.User;
 import com.example.clothesstore.user.UserDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.List;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpClientErrorException;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -28,16 +28,16 @@ public class AuthController {
     }
 
     public record RegisterRequest(
-        String email,
-        String password,
-        String firstName,
-        String lastName
+        @NotBlank @Email @Size(max = 100) String email,
+        @NotBlank @Size(min = 8, max = 72) String password,
+        @Size(max = 50) String firstName,
+        @Size(max = 50) String lastName
     ) {}
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public UserDto register(
-        @RequestBody RegisterRequest request,
+        @RequestBody @Valid RegisterRequest request,
         HttpServletRequest httpRequest,
         HttpServletResponse httpResponse
     ) {
@@ -58,11 +58,14 @@ public class AuthController {
         return UserDto.from(user);
     }
 
-    public record LoginRequest(String email, String password) {}
+    public record LoginRequest(
+        @NotBlank @Email @Size(max = 100) String email,
+        @NotBlank String password
+    ) {}
 
     @PostMapping("/login")
     public UserDto login(
-        @RequestBody LoginRequest request,
+        @RequestBody @Valid LoginRequest request,
         HttpServletRequest httpRequest,
         HttpServletResponse httpResponse
     ) {
@@ -85,8 +88,9 @@ public class AuthController {
     public UserDto me() {
         log.info("User requests itself");
         User user = authService.me();
-        if(user == null){
-            throw new UserNotFoundException("No such user");
+        if (user == null) {
+            // Не 404: для неавторизованного клиента это именно 401.
+            throw new UnauthorizedUserException();
         }
         return UserDto.from(user);
     }

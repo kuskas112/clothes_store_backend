@@ -1,8 +1,10 @@
 package com.example.clothesstore.textile;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +20,8 @@ public class TextileController {
     private final TextileMapper textileMapper;
 
     @GetMapping
-    public PagedModel<TextileDto> getAll(Pageable pageable) {
+    public PagedModel<TextileDto> getAll(
+            @PageableDefault(size = 20, sort = "id") Pageable pageable) {
         Page<TextileDto> page = textileService.getAll(pageable)
                 .map(textileMapper::toDto);
         return new PagedModel<>(page);
@@ -30,7 +33,8 @@ public class TextileController {
     }
 
     @GetMapping("/by-ids")
-    public List<TextileDto> getMany(@RequestParam List<Integer> ids) {
+    public List<TextileDto> getMany(
+            @RequestParam @Size(max = 100) List<Integer> ids) {
         return textileMapper.toDto(textileService.getMany(ids));
     }
 

@@ -12,6 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 
@@ -21,16 +22,19 @@ public class AuthService {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
+    private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     public AuthService(
             UserService userService,
             AuthenticationManager authenticationManager,
-            SecurityContextRepository securityContextRepository
+            SecurityContextRepository securityContextRepository,
+            SessionAuthenticationStrategy sessionAuthenticationStrategy
     ) {
         this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
+        this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         log.info("AuthService created");
     }
 
@@ -42,17 +46,20 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(email, password)
         );
 
-        // 2. Создаём контекст и кладём в него аутентификацию
+        // 2. Защита от session fixation (changeSessionId)
+        sessionAuthenticationStrategy.onAuthentication(auth, request, response);
+
+        // 3. Создаём контекст и кладём в него аутентификацию
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
         SecurityContextHolder.setContext(context);
 
-        // 3. Сохраняем контекст в сессию → Spring ставит cookie JSESSIONID
+        // 4. Сохраняем контекст в сессию → Spring ставит cookie JSESSIONID
         securityContextRepository.saveContext(context, request, response);
 
         log.info("User {} logged in", email);
 
-        // 4. Возвращаем пользователя
+        // 5. Возвращаем пользователя
         return userService.getUserByEmail(email);
     }
     public User register(String email, String password){
@@ -83,7 +90,9 @@ public class AuthService {
 
     public User me(){
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
+        if (auth == null
+                || !auth.isAuthenticated()
+                || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
             return null;
         }
         return userService.getUserByEmail(auth.getName());

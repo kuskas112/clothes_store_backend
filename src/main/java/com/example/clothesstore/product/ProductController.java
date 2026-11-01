@@ -4,9 +4,11 @@ import com.example.clothesstore.category.CategoryMapper;
 import com.example.clothesstore.category.dto.CategoryRefDto;
 import com.example.clothesstore.product.dto.ProductDto;
 import com.example.clothesstore.product.dto.ProductShortDto;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +26,8 @@ public class ProductController {
     private final CategoryMapper categoryMapper;
 
     @GetMapping
-    public PagedModel<ProductShortDto> getAll(Pageable pageable) {
+    public PagedModel<ProductShortDto> getAll(
+            @PageableDefault(size = 20, sort = "id") Pageable pageable) {
         Page<ProductShortDto> page = productService.getAll(pageable);
         return new PagedModel<>(page);
     }
@@ -35,12 +38,15 @@ public class ProductController {
     }
 
     @GetMapping("/by-ids")
-    public List<ProductShortDto> getMany(@RequestParam List<Integer> ids) {
+    public List<ProductShortDto> getMany(
+            @RequestParam @Size(max = 100) List<Integer> ids) {
         return productService.getMany(ids);
     }
 
     @GetMapping("/{productId}/categories")
     public List<CategoryRefDto> getCategoriesByProductId(@PathVariable Integer productId) {
-        return productCategoryService.getCategoriesForProduct(productId).stream().map(categoryMapper::toRefDto).toList();
+        return productCategoryService.getCategoriesForProduct(productId).stream()
+                .map(categoryMapper::toRefDto)
+                .toList();
     }
 }

@@ -1,15 +1,14 @@
 package com.example.clothesstore.color;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin/colors")
@@ -18,51 +17,74 @@ public class ColorController {
 
     private final ColorRepository colorRepository;
 
-    private final ObjectMapper objectMapper;
-
     @GetMapping
-    public List<Color> getAll() {
-        return colorRepository.findAll();
+    public List<ColorDto> getAll() {
+        return colorRepository.findAll().stream().map(ColorController::toDto).toList();
     }
 
     @GetMapping("/{id}")
-    public Color getOne(@PathVariable Integer id) {
-        Optional<Color> colorOptional = colorRepository.findById(id);
-        return colorOptional.orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity with id `%s` not found".formatted(id)));
+    public ColorDto getOne(@PathVariable Integer id) {
+        return toDto(findOrThrow(id));
     }
 
     @GetMapping("/by-ids")
-    public List<Color> getMany(@RequestParam List<Integer> ids) {
-        return colorRepository.findAllById(ids);
+    public List<ColorDto> getMany(
+            @RequestParam @Size(max = 100) List<Integer> ids) {
+        return colorRepository.findAllById(ids).stream().map(ColorController::toDto).toList();
     }
 
     @PostMapping
-    public Color create(@RequestBody Color color) {
-        return colorRepository.save(color);
+    @ResponseStatus(HttpStatus.CREATED)
+    public ColorDto create(@RequestBody @Valid ColorRequest request) {
+        Color color = new Color();
+        color.setCode(request.code());
+        color.setName(request.name());
+        color.setHex(request.hex());
+        return toDto(colorRepository.save(color));
     }
 
     @PatchMapping("/{id}")
-    public Color patch(@PathVariable Integer id, @RequestBody JsonNode patchNode) throws IOException {
-        Color color = colorRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity with id `%s` not found".formatted(id)));
+    public ColorDto patch(@PathVariable Integer id,
+                          @RequestBody @Valid ColorPatchRequest request) {
+        Color color = findOrThrow(id);
 
-        objectMapper.readerForUpdating(color).readValue(patchNode);
+        if (request.code() != null) {
+            color.setCode(request.code());
+        }
+        if (request.name() != null) {
+            color.setName(request.name());
+        }
+        if (request.hex() != null) {
+            color.setHex(request.hex());
+        }
 
-        return colorRepository.save(color);
+        return toDto(colorRepository.save(color));
     }
 
     @DeleteMapping("/{id}")
-    public Color delete(@PathVariable Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
         Color color = colorRepository.findById(id).orElse(null);
         if (color != null) {
             colorRepository.delete(color);
         }
-        return color;
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping
-    public void deleteMany(@RequestParam List<Integer> ids) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteMany(
+            @RequestParam @Size(max = 100) List<Integer> ids) {
         colorRepository.deleteAllById(ids);
+    }
+
+    private Color findOrThrow(Integer id) {
+        return colorRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Color with id `%s` not found".formatted(id)));
+    }
+
+    private static ColorDto toDto(Color color) {
+        return new ColorDto(color.getId(), color.getCode(), color.getName(), color.getHex());
     }
 }

@@ -2,7 +2,6 @@ package com.example.clothesstore.image;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -22,6 +21,8 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.util.HexFormat;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -29,10 +30,31 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class LocalImageStorageService implements ImageStorageService {
 
+    /** Форматы, которые реально умеет читать ImageIO в этом образе. */
+    private static final Map<String, String> FORMAT_TO_EXTENSION = Map.of(
+            "jpeg", ".jpg",
+            "jpg", ".jpg",
+            "png", ".png",
+            "gif", ".gif",
+            "bmp", ".bmp"
+    );
+
+    private static final Set<String> ALLOWED_DECLARED_TYPES = Set.of(
+            "image/jpeg", "image/jpg", "image/png", "image/gif", "image/bmp"
+    );
+
+    /** Защита от decompression bomb: 40 MP и не более 20000px по стороне. */
+    private static final long MAX_PIXELS = 40_000_000L;
+    private static final int MAX_SIDE = 20_000;
+
     @Value("${app.storage.location}")
     private String rootLocation;
 
-    public record ImageDimensions(Integer width, Integer height) {}
+    public record ImageDimensions(Integer width, Integer height) {
+    }
+
+    private record ProbedImage(String format, int width, int height) {
+    }
 
     @Override
     public Image store(MultipartFile file) {
@@ -42,14 +64,40 @@ public class LocalImageStorageService implements ImageStorageService {
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
+        if (contentType == null || !ALLOWED_DECLARED_TYPES.contains(contentType.toLowerCase())) {
             log.warn("Rejected non-image file: name={}, contentType={}",
                     file.getOriginalFilename(), contentType);
-            throw new IllegalArgumentException("Only images are allowed");
+            throw new IllegalArgumentException("Only JPEG, PNG, GIF and BMP images are allowed");
+        }
+
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read uploaded file", e);
+        }
+
+        // Проверяем содержимое, а не только заголовок Content-Type:
+        // так отсекаются SVG/HTML/произвольные байты под видом картинки.
+        ProbedImage probed = probe(bytes);
+        if (probed == null) {
+            log.warn("Rejected file that is not a readable image: {}", file.getOriginalFilename());
+            throw new IllegalArgumentException("File is not a valid image");
+        }
+        if (probed.width() <= 0 || probed.height() <= 0
+                || probed.width() > MAX_SIDE || probed.height() > MAX_SIDE
+                || (long) probed.width() * probed.height() > MAX_PIXELS) {
+            log.warn("Rejected image with invalid dimensions {}x{}", probed.width(), probed.height());
+            throw new IllegalArgumentException("Image dimensions are too large");
+        }
+
+        String extension = FORMAT_TO_EXTENSION.get(probed.format());
+        if (extension == null) {
+            log.warn("Rejected image with unsupported format: {}", probed.format());
+            throw new IllegalArgumentException("Unsupported image format: " + probed.format());
         }
 
         String subDir = LocalDate.now().toString();
-        String extension = extractExtension(file.getOriginalFilename());
         String storageKey = subDir + "/" + UUID.randomUUID() + extension;
 
         Path root = Paths.get(rootLocation).normalize();
@@ -62,33 +110,24 @@ public class LocalImageStorageService implements ImageStorageService {
 
         try {
             Files.createDirectories(target.getParent());
-
-            byte[] bytes = file.getBytes();
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String checksum = HexFormat.of().formatHex(digest.digest(bytes));
-
             Files.write(target, bytes);
 
-            ImageDimensions dims = readDimensions(bytes);
+            String checksum = sha256(bytes);
 
             log.info("Stored image: key={}, size={} bytes, dimensions={}x{}, checksum={}",
-                    storageKey, bytes.length,
-                    dims != null ? dims.width() : null,
-                    dims != null ? dims.height() : null,
-                    checksum);
+                    storageKey, bytes.length, probed.width(), probed.height(), checksum);
 
             var image = new Image();
             image.setStorageKey(storageKey);
-            image.setOriginalFilename(file.getOriginalFilename());
-            image.setContentType(contentType);
-            image.setSizeBytes(file.getSize());
+            image.setOriginalFilename(safeOriginalFilename(file.getOriginalFilename(), extension));
+            image.setContentType("image/" + ("jpg".equals(probed.format()) ? "jpeg" : probed.format()));
+            image.setSizeBytes((long) bytes.length);
             image.setChecksum(checksum);
-            image.setWidth(dims != null ? dims.width() : null);
-            image.setHeight(dims != null ? dims.height() : null);
+            image.setWidth(probed.width());
+            image.setHeight(probed.height());
 
             return image;
-        } catch (IOException | NoSuchAlgorithmException e) {
+        } catch (IOException e) {
             log.error("Failed to store image: name={}, key={}", file.getOriginalFilename(), storageKey, e);
             throw new RuntimeException("Failed to store file", e);
         }
@@ -143,37 +182,54 @@ public class LocalImageStorageService implements ImageStorageService {
             throw new IllegalArgumentException("File is empty");
         }
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(file.getBytes()));
-        } catch (IOException | NoSuchAlgorithmException e) {
+            return sha256(file.getBytes());
+        } catch (IOException e) {
             log.error("Failed to compute checksum for: {}", file.getOriginalFilename(), e);
             throw new RuntimeException("Failed to compute checksum", e);
         }
     }
 
-    private ImageDimensions readDimensions(byte[] bytes) {
+    private static String sha256(byte[] bytes) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(bytes));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
+    }
+
+    private ProbedImage probe(byte[] bytes) {
         try (ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
             if (!readers.hasNext()) {
-                log.debug("No ImageReader found for uploaded bytes");
                 return null;
             }
             ImageReader reader = readers.next();
             try {
-                reader.setInput(iis);
-                return new ImageDimensions(reader.getWidth(0), reader.getHeight(0));
+                reader.setInput(iis, true, true);
+                return new ProbedImage(
+                        reader.getFormatName().toLowerCase(),
+                        reader.getWidth(0),
+                        reader.getHeight(0)
+                );
             } finally {
                 reader.dispose();
             }
         } catch (IOException e) {
-            log.warn("Failed to read image dimensions", e);
+            log.warn("Failed to probe image", e);
             return null;
         }
     }
 
-    private String extractExtension(String filename) {
-        if (filename == null) return "";
-        int dot = filename.lastIndexOf('.');
-        return dot >= 0 ? filename.substring(dot).toLowerCase() : "";
+    /**
+     * Имя файла не участвует в пути (путь = UUID), но всё равно чистим
+     * управляющие символы и ограничиваем длину — оно попадает в ответы API.
+     */
+    private static String safeOriginalFilename(String originalFilename, String extension) {
+        if (originalFilename == null || originalFilename.isBlank()) {
+            return "image" + extension;
+        }
+        String cleaned = originalFilename.replaceAll("[\\p{Cntrl}\\\\/]", "_");
+        return cleaned.length() > 255 ? cleaned.substring(0, 255) : cleaned;
     }
 }

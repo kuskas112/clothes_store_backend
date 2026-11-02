@@ -1,0 +1,133 @@
+erDiagram
+    USERS {
+        bigint id PK
+        varchar email UK "varchar(100), NOT NULL"
+        varchar password "varchar(255), NOT NULL - BCrypt"
+        varchar role "varchar(20), NOT NULL, CHECK: USER|ADMIN"
+        varchar first_name "varchar(50)"
+        varchar last_name "varchar(50)"
+        varchar phone "varchar(20)"
+        timestamptz created_at "NOT NULL"
+        timestamptz updated_at
+    }
+
+    PRODUCT {
+        int id PK
+        varchar name UK "varchar(255)"
+        text description
+        varchar gender "CHECK: MAN|WOMAN|UNISEX"
+        varchar season "CHECK: SUMMER|WINTER|DEMI_SEASON|ALL_SEASON"
+        numeric base_price "numeric(10,2)"
+        numeric discounted_price "numeric(10,2), CHECK: 0 <= x <= base_price (V7)"
+    }
+
+    PRODUCT_VARIANT {
+        int id PK
+        int product_id FK "product.id, NOT NULL, ON DELETE CASCADE"
+        int color_id FK "color.id"
+        int size_id FK "size.id"
+        varchar sku UK "varchar(50), NOT NULL"
+        varchar barcode UK "varchar(50)"
+        int stock_quantity "NOT NULL, default 0"
+        numeric price "numeric(10,2)"
+    }
+
+    PRODUCT_IMAGE {
+        bigint id PK
+        int product_id FK "product.id, NOT NULL, ON DELETE CASCADE"
+        bigint image_id FK "image.id, NOT NULL"
+        int sort_order "NOT NULL, default 0"
+        boolean is_main "NOT NULL, default false"
+        varchar alt_text "varchar(500)"
+    }
+
+    PRODUCT_VARIANT_IMAGE {
+        bigint id PK
+        int variant_id FK "product_variant.id, NOT NULL, ON DELETE CASCADE"
+        bigint image_id FK "image.id, NOT NULL"
+        int sort_order "NOT NULL"
+        boolean is_main "NOT NULL"
+        varchar alt_text "varchar(500)"
+    }
+
+    PRODUCT_TEXTILE {
+        int id PK
+        int product_id FK "product.id, NOT NULL, ON DELETE CASCADE"
+        int textile_id FK "textile.id, NOT NULL"
+        int percentage "0..100"
+        boolean primary_fabric
+    }
+
+    PRODUCT_CATEGORY {
+        bigint id PK
+        int product_id FK "product.id, NOT NULL, ON DELETE CASCADE"
+        bigint category_id FK "category.id, NOT NULL, ON DELETE CASCADE"
+        int sort_order "NOT NULL, default 0"
+        boolean is_primary "NOT NULL, default false"
+    }
+
+    IMAGE {
+        bigint id PK
+        varchar storage_key UK "varchar(500), NOT NULL"
+        varchar original_filename "varchar(255)"
+        varchar content_type "varchar(100), NOT NULL"
+        bigint size_bytes "NOT NULL"
+        varchar checksum UK "varchar(64) - SHA-256"
+        int width
+        int height
+        varchar alt_text "varchar(500)"
+        timestamptz created_at "NOT NULL"
+        timestamptz updated_at "NOT NULL"
+    }
+
+    COLOR {
+        int id PK
+        varchar code UK "varchar(20), NOT NULL"
+        varchar name UK "varchar(50), NOT NULL"
+        varchar hex "varchar(7), #RRGGBB"
+    }
+
+    SIZE {
+        int id PK
+        varchar code "varchar(20), NOT NULL"
+        varchar system "varchar(20), NOT NULL, CHECK: LETTER|EU|US|UK|KIDS|SHOES"
+        varchar label "varchar(100)"
+        int sort_order "NOT NULL"
+    }
+
+    TEXTILE {
+        int id PK
+        varchar name UK "varchar(100), NOT NULL"
+        varchar description "varchar(1000)"
+        varchar composition "varchar(255)"
+        int density_gsm
+        varchar weave_type "varchar(30), CHECK: WOVEN|KNITTED|NON_WOVEN|LACE|FELT"
+        varchar stretch "varchar(20), CHECK: NONE|LOW|MEDIUM|HIGH"
+        varchar manufacturer "varchar(20), CHECK: RUSSIA|CHINA|TURKEY|BELARUS"
+        varchar care_instructions "varchar(500)"
+        numeric price_modifier "numeric(10,2)"
+        boolean active "NOT NULL"
+    }
+
+    CATEGORY {
+        bigint id PK
+        varchar name UK "varchar(100), NOT NULL"
+        varchar slug UK "varchar(100), NOT NULL"
+        varchar description "varchar(500)"
+        bigint parent_id FK "category.id - self reference"
+        int sort_order "NOT NULL, default 0"
+        boolean active "NOT NULL, default true"
+    }
+
+    PRODUCT ||--o{ PRODUCT_VARIANT : "варианты (1:N)"
+    PRODUCT ||--o{ PRODUCT_IMAGE : "картинки (1:N)"
+    PRODUCT ||--o{ PRODUCT_TEXTILE : "состав (1:N)"
+    PRODUCT ||--o{ PRODUCT_CATEGORY : "категории (1:N)"
+    PRODUCT_VARIANT ||--o{ PRODUCT_VARIANT_IMAGE : "картинки варианта (1:N)"
+    IMAGE ||--o{ PRODUCT_IMAGE : "используется в (1:N)"
+    IMAGE ||--o{ PRODUCT_VARIANT_IMAGE : "используется в (1:N)"
+    TEXTILE ||--o{ PRODUCT_TEXTILE : "используется в (1:N)"
+    COLOR ||--o{ PRODUCT_VARIANT : "цвет (1:N)"
+    SIZE ||--o{ PRODUCT_VARIANT : "размер (1:N)"
+    CATEGORY ||--o{ PRODUCT_CATEGORY : "товары (1:N)"
+    CATEGORY ||--o{ CATEGORY : "дочерние (1:N)"
